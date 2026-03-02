@@ -310,6 +310,14 @@ class GGUFInference:
             # Step 2: Clear chat_handler first (it holds references to vision model)
             if self.clip_model_array is not None:
                 try:
+                    # ---> ADD THIS BLOCK BACK <---
+                    # Explicitly close Vision Handler Exit Stacks (Crucial for Qwen2.5-VL/Llava)
+                    if hasattr(self.clip_model_array, '_exit_stack') and self.clip_model_array._exit_stack:
+                        try:
+                            self.clip_model_array._exit_stack.close()
+                        except:
+                            pass
+                    # -----------------------------
                     # Use close() if available (safe Python API)
                     if hasattr(self.clip_model_array, 'close'):
                         self.clip_model_array.close()
@@ -919,6 +927,8 @@ class GGUFInference:
                 "n_ctx": 8192,
                 "n_gpu_layers": -1,  # Use GPU if available
                 "verbose": False,
+                "use_mmap": False,   
+                "use_mlock": False,  
             }
 
             # Load vision model if it's a VL model and vision is enabled
