@@ -911,10 +911,10 @@ class GGUFInference:
                 return False
 
             from llama_cpp import Llama
-            from llama_cpp.llama_chat_format import Llava15ChatHandler
 
             # Check if this is a vision model
             is_vision_model = self._is_vision_model(model_path)
+            model_name_lower = os.path.basename(model_path).lower()
 
             # Only print model name for initial load
             print(f"Loading: {os.path.basename(model_path)}")
@@ -927,14 +927,52 @@ class GGUFInference:
                 "n_ctx": 8192,
                 "n_gpu_layers": -1,  # Use GPU if available
                 "verbose": False,
-                "use_mmap": False,   
-                "use_mlock": False,  
+                "use_mmap": False,
+                "use_mlock": False,
             }
 
             # Load vision model if it's a VL model and vision is enabled
             if is_vision_model and enable_vision and mmproj_path and mmproj_path != "No mmproj files":
                 try:
-                    chat_handler = Llava15ChatHandler(clip_model_path=mmproj_path)
+                    handler_cls = None
+                    if "qwen3" in model_name_lower:
+                        from llama_cpp.llama_chat_format import Qwen3VLChatHandler
+                        handler_cls = Qwen3VLChatHandler
+                    elif "qwen2.5-vl" in model_name_lower or "qwen25vl" in model_name_lower:
+                        from llama_cpp.llama_chat_format import Qwen25VLChatHandler
+                        handler_cls = Qwen25VLChatHandler
+                    elif "qwen3.5" in model_name_lower or "qwen35" in model_name_lower:
+                        from llama_cpp.llama_chat_format import Qwen35ChatHandler
+                        handler_cls = Qwen35ChatHandler
+                    elif "gemma3" in model_name_lower:
+                        from llama_cpp.llama_chat_format import Gemma3ChatHandler
+                        handler_cls = Gemma3ChatHandler
+                    elif "minicpm" in model_name_lower:
+                        from llama_cpp.llama_chat_format import MiniCPMv26ChatHandler
+                        handler_cls = MiniCPMv26ChatHandler
+                    elif "lfm" in model_name_lower and "vl" in model_name_lower:
+                        from llama_cpp.llama_chat_format import LFM2VLChatHandler
+                        handler_cls = LFM2VLChatHandler
+                    elif "moondream" in model_name_lower:
+                        from llama_cpp.llama_chat_format import MoondreamChatHandler
+                        handler_cls = MoondreamChatHandler
+                    elif "nanollava" in model_name_lower or "nano-llava" in model_name_lower:
+                        from llama_cpp.llama_chat_format import NanoLlavaChatHandler
+                        handler_cls = NanoLlavaChatHandler
+                    elif "llava-1.6" in model_name_lower or "llava16" in model_name_lower:
+                        from llama_cpp.llama_chat_format import Llava16ChatHandler
+                        handler_cls = Llava16ChatHandler
+                    elif "llama-3.2-vision" in model_name_lower or "llama3vision" in model_name_lower:
+                        from llama_cpp.llama_chat_format import Llama3VisionAlphaChatHandler
+                        handler_cls = Llama3VisionAlphaChatHandler
+                    elif "granite-docling" in model_name_lower:
+                        from llama_cpp.llama_chat_format import GraniteDoclingChatHandler
+                        handler_cls = GraniteDoclingChatHandler
+                    else:
+                        from llama_cpp.llama_chat_format import Llava15ChatHandler
+                        handler_cls = Llava15ChatHandler
+
+                    chat_handler = handler_cls(clip_model_path=mmproj_path)
                     load_kwargs["chat_handler"] = chat_handler
                     self.clip_model_array = chat_handler
                 except Exception as e:
